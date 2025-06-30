@@ -1,70 +1,88 @@
 // Cargar la lista de productos al iniciar la página
-ListarProductos();
+document.addEventListener("DOMContentLoaded", function () {
+    ListarProductos();
+});
 
-/**
- * Función para listar productos con opción de búsqueda
- * @param {string} busqueda - Término de búsqueda opcional
- */
-function ListarProductos(busqueda) {
+function ListarProductos(busqueda = "") {
     fetch("listar.php", {
         method: "POST",
-        body: busqueda  // Enviar término de búsqueda al servidor
-    }).then(response => response.text()).then(response => {
-        // Insertar el HTML de la tabla en el elemento resultado
-        resultado.innerHTML = response;
+        body: busqueda
     })
+    .then(response => response.text())
+    .then(html => {
+        resultado.innerHTML = html;
+    });
 }
 
-// Event listener para el botón registrar/actualizar
+// Centralizar lógica de Guardar/Modificar con switch en JS
 registrar.addEventListener("click", () => {
-    // Enviar datos del formulario al servidor
+    const formData = new FormData(frm);
+    let accion = registrar.value === "Registrar" ? "Guardar" : "Modificar";
+    formData.append("Accion", accion);
+
     fetch("registrar.php", {
         method: "POST",
-        body: new FormData(frm)  // Convertir formulario a FormData
-    }).then(response => response.text()).then(response => {
-        // Verificar respuesta del servidor
-        if (response == "ok") {
-            // Mostrar alerta de éxito para nuevo registro
-            Swal.fire({
-                icon: 'success',
-                title: 'Registrado',
-                showConfirmButton: false,
-                timer: 1500
-            })
-            frm.reset();          // Limpiar formulario
-            ListarProductos();    // Actualizar lista
-        } else if (response == "modificado") {
-            // Mostrar alerta de éxito para actualización
-            Swal.fire({
-                icon: 'success',
-                title: 'Modificado',
-                showConfirmButton: false,
-                timer: 1500
-            })
-            registrar.value = "Registrar";
-            idp.value = "";
-            ListarProductos();
-            frm.reset();
-        } else {
-            // Mostrar alerta de error enviada por el backend
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: response,
-                confirmButtonText: 'OK'
-            });
+        body: formData
+    })
+    .then(response => response.json())
+    .then(res => {
+        switch (res.accion) {
+            case "guardar":
+                if (res.success) {
+                    Swal.fire('¡Éxito!', res.message, 'success');
+                    frm.reset();
+                    registrar.value = "Registrar";
+                    idp.value = "";
+                    ListarProductos();
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+                break;
+            case "modificar":
+                if (res.success) {
+                    Swal.fire('¡Modificado!', res.message, 'success');
+                    frm.reset();
+                    registrar.value = "Registrar";
+                    idp.value = "";
+                    ListarProductos();
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+                break;
+            default:
+                Swal.fire('Error', res.message, 'error');
+                break;
         }
     });
 });
 
-/**
- * Función para eliminar un producto
- * @param {string} id - ID del producto a eliminar
- */
+// Buscar productos en tiempo real
+buscar.addEventListener("keyup", () => {
+    const valor = buscar.value;
+    ListarProductos(valor);
+});
+
+// Función para cargar datos en el formulario para edición
+function Editar(id) {
+    fetch("editar.php", {
+        method: "POST",
+        body: id
+    })
+    .then(response => response.json())
+    .then(data => {
+        idp.value = data.id;
+        codigo.value = data.codigo;
+        producto.value = data.producto;
+        precio.value = data.precio;
+        cantidad.value = data.cantidad;
+        registrar.value = "Actualizar";
+    });
+}
+
+// Función para eliminar un producto
 function Eliminar(id) {
-    // Mostrar confirmación antes de eliminar
     Swal.fire({
-        title: 'Esta seguro de eliminar?',
+        title: '¿Está seguro de eliminar?',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -73,57 +91,21 @@ function Eliminar(id) {
         cancelButtonText: 'NO'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Proceder con la eliminación
             fetch("eliminar.php", {
                 method: "POST",
-                body: id  // Enviar ID del producto
-            }).then(response => response.text()).then(response => {
-                if (response == "ok") {
-                   ListarProductos();  // Actualizar lista
-                   // Mostrar confirmación de eliminación
-                   Swal.fire({
-                       icon: 'success',
-                       title: 'Eliminado',
-                       showConfirmButton: false,
-                       timer: 1500
-                   })
-                }
-                
+                body: id
             })
-            
+            .then(response => response.json())
+            .then(respuesta => {
+                if (respuesta.success) {
+                    Swal.fire('Eliminado', respuesta.message, 'success');
+                    ListarProductos();
+                } else {
+                    Swal.fire('Error', respuesta.message, 'error');
+                }
+            }).catch(() => {
+                Swal.fire('Error', 'Error de comunicación con el servidor.', 'error');
+            });
         }
-    })
+    });
 }
-
-/**
- * Función para cargar datos de un producto en el formulario para edición
- * @param {string} id - ID del producto a editar
- */
-function Editar(id) {
-    // Obtener datos del producto
-    fetch("editar.php", {
-        method: "POST",
-        body: id  // Enviar ID del producto
-    }).then(response => response.json()).then(response => {
-        // Cargar datos en el formulario
-        idp.value = response.id;
-        codigo.value = response.codigo;
-        producto.value = response.producto;
-        precio.value = response.precio;
-        cantidad.value = response.cantidad;
-        // Cambiar botón a modo "Actualizar"
-        registrar.value = "Actualizar"
-    })
-}
-
-// Event listener para búsqueda en tiempo real
-buscar.addEventListener("keyup", () => {
-    const valor = buscar.value;
-    if (valor == "") {
-        // Si no hay texto, mostrar todos los productos
-        ListarProductos();
-    }else{
-        // Buscar productos que coincidan con el término
-        ListarProductos(valor);
-    }
-});

@@ -1,18 +1,17 @@
 <?php
-    // Obtener el ID del producto desde el cuerpo de la petición
-    $data = file_get_contents("php://input");
-    
-    // Incluir archivo de conexión a la base de datos
-    require "conexion.php";
-    
-    // Preparar consulta para obtener los datos del producto por ID
-    $query = $pdo->prepare("SELECT * FROM productos WHERE id = :id");
-    $query->bindParam(":id", $data);  // Vincular el parámetro ID
-    $query->execute();                // Ejecutar la consulta
-    
-    // Obtener el resultado como array asociativo
-    $resultado = $query->fetch(PDO::FETCH_ASSOC);
-    
-    // Devolver los datos del producto en formato JSON
-    echo json_encode($resultado);
+header('Content-Type: application/json');
+require_once "Modelo/conexion.php";
+
+$id = file_get_contents("php://input");
+if (!$id || !is_numeric($id)) {
+    echo json_encode(["success" => false, "message" => "ID inválido"]);
+    exit;
+}
+$db = DB::getInstance();
+$res = $db->query("SELECT * FROM productos WHERE id = ?", [$id]);
+if ($res && count($res) > 0) {
+    echo json_encode($res[0]);
+} else {
+    echo json_encode(["success" => false, "message" => "Producto no encontrado"]);
+}
 ?>

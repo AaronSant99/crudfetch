@@ -1,34 +1,21 @@
 <?php
+require_once "Modelo/Productos.php";
+
 // Obtener datos de búsqueda desde el cuerpo de la petición
 $data = file_get_contents("php://input");
-
-// Incluir archivo de conexión a la base de datos
-require "conexion.php";
-
-// Consulta por defecto: obtener todos los productos ordenados por ID descendente
-$consulta = $pdo->prepare("SELECT * FROM productos ORDER BY id DESC");
-$consulta->execute();
-
-// Si hay datos de búsqueda, realizar búsqueda filtrada
-if ($data != "") {
-    // Buscar en los campos id, producto y precio usando LIKE
-    $consulta = $pdo->prepare("SELECT * FROM productos WHERE id LIKE '%".$data."%' OR producto LIKE '%".$data."%' OR precio LIKE '%".$data."%'");
-    $consulta->execute();
-}
-
-// Obtener todos los resultados
-$resultado = $consulta->fetchAll(PDO::FETCH_ASSOC);
+$productos = Producto::buscar(trim($data));
 
 // Generar las filas de la tabla HTML
-foreach ($resultado as $data) {
+foreach ($productos as $prod) {
     echo "<tr>
-            <td>" . $data['id'] . "</td>
-            <td>" . $data['producto'] . "</td>
-            <td>" . $data['precio'] . "</td>
-            <td>" . $data['cantidad'] . "</td>
+            <td>" . htmlspecialchars($prod['id']) . "</td>
+            <td>" . htmlspecialchars($prod['producto']) . "</td>
+            <td>" . htmlspecialchars($prod['precio']) . "</td>
+            <td>" . htmlspecialchars($prod['cantidad']) . "</td>
             <td>
-                <button type='button' class='btn btn-success' onclick=Editar('" . $data['id'] . "')>Editar</button>
-                <button type='button' class='btn btn-danger' onclick=Eliminar('" . $data['id'] . "')>Eliminar</button>
-            </td>        
+                <button type='button' class='btn btn-success' onclick='Editar(" . json_encode($prod['id']) . ")'>Editar</button>
+                <button type='button' class='btn btn-danger' onclick='Eliminar(" . json_encode($prod['id']) . ")'>Eliminar</button>
+            </td>
         </tr>";
 }
+?>
