@@ -33,7 +33,7 @@ registrar.addEventListener("click", () => {
             })
             frm.reset();          // Limpiar formulario
             ListarProductos();    // Actualizar lista
-        }else{
+        } else if (response == "modificado") {
             // Mostrar alerta de éxito para actualización
             Swal.fire({
                 icon: 'success',
@@ -41,13 +41,20 @@ registrar.addEventListener("click", () => {
                 showConfirmButton: false,
                 timer: 1500
             })
-            // Resetear formulario a modo "Registrar"
             registrar.value = "Registrar";
             idp.value = "";
             ListarProductos();
             frm.reset();
+        } else {
+            // Mostrar alerta de error enviada por el backend
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: response,
+                confirmButtonText: 'OK'
+            });
         }
-    })
+    });
 });
 
 /**
