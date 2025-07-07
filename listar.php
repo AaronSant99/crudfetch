@@ -1,11 +1,19 @@
 <?php
+/**
+ * LISTAR.PHP - Controlador para listar y buscar productos
+ * Genera las filas HTML de la tabla de productos
+ */
+
+// Incluye el modelo de productos
 require_once "Modelo/Productos.php";
 
-// Obtener datos de búsqueda desde el cuerpo de la petición
+// Obtiene el criterio de búsqueda desde el cuerpo de la petición
 $data = file_get_contents("php://input");
+
+// Busca productos con el criterio (vacío = todos los productos)
 $productos = Producto::buscar(trim($data));
 
-// Generar las filas de la tabla HTML
+// Genera las filas HTML para cada producto
 foreach ($productos as $prod) {
     echo "<tr>
             <td>" . htmlspecialchars($prod['id']) . "</td>
